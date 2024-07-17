@@ -12,18 +12,20 @@ namespace WeatherApp.Services
         private readonly HttpClient _httpClient;
         private readonly string _apiKey = "88342dc176b514bb3d1c1667ee63da26";  //
         private readonly ILogger<WeatherService> _logger;
+        private readonly Weather_History _weather_History;
 
         private double Latitude { get; set; }
         private double Longitude { get; set; }
         private string Location { get; set; } = "Tampa";
 
-        public WeatherService(HttpClient httpClient, ILogger<WeatherService> logger)
+        public WeatherService(HttpClient httpClient,Weather_History weather_History, ILogger<WeatherService> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
+            _weather_History = weather_History;
         }
 
-        public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays)
+        public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays , int numberOfDays_Recorded=0)
         {
             var weatherModel = new WeatherModel { Location = location, NumberOfDays = numberOfDays };
 
@@ -37,7 +39,12 @@ namespace WeatherApp.Services
 
             // Get weather data
             var weatherData = await GetWeatherDataAsync(lat, lon);
+            DateTime dateTime = DateTime.Now;
+            var record = new WeatherData { Timestamp = dateTime, Temperature = currentWeather.Item1, Description = currentWeather.Item2, Date=dateTime.Date, WindSpeed= currentWeather.Item3 ,City=location};
 
+            _weather_History.Records.Add(record);
+
+            weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location,numberOfDays_Recorded);
             // Filter weather data by date
             weatherModel.HistoricalData.Records = FilterWeatherData(weatherData, numberOfDays);
 
@@ -67,14 +74,15 @@ namespace WeatherApp.Services
             }
         }
 
-        private async Task<(double, string)> GetCurrentWeatherAsync(double lat, double lon)
+        private async Task<(double, string,double)> GetCurrentWeatherAsync(double lat, double lon)
         {
             string currentWeatherApiUrl = $"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={_apiKey}&units=metric";
             string response = await _httpClient.GetStringAsync(currentWeatherApiUrl);
             JObject data = JObject.Parse(response);
             double temperature = data["main"]["temp"].Value<double>();
+            double windspeed= data["wind"]["speed"].Value<double>();
             string description = data["weather"][0]["description"].Value<string>();
-            return (temperature, description);
+            return (temperature, description,windspeed);
         }
 
         private async Task<JArray> GetWeatherDataAsync(double lat, double lon)

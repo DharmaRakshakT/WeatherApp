@@ -12,10 +12,9 @@ public class WeatherModel
     public string Location { get; set; }
     public int UpdateInterval { get; set; } // Interval in minutes
     public int NumberOfDays { get; set; } // Number of days for historical data
-
     public double CurrentTemperature { get; set; }
     public string CurrentDescription { get; set; }
-    //public List<WeatherData> Forcast { get; set; } = new List<WeatherData>();
+    public int History_Days { get; set; }
     public Weather_History HistoricalData { get; set; } = new Weather_History();
     public Weather_History Recorded_History { get; set; } = new Weather_History();
 }

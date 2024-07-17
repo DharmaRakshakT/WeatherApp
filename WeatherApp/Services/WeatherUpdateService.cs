@@ -38,10 +38,12 @@ namespace WeatherApp.Services
                 {
                     try
                     {
-                        var updatedWeatherModel = await _weatherService.GetWeatherDataAsync(_weatherModel.Location, _weatherModel.NumberOfDays);
+                        var updatedWeatherModel = await _weatherService.GetWeatherDataAsync(_weatherModel.Location, _weatherModel.NumberOfDays,_weatherModel.History_Days);
+                        
                         _weatherModel.CurrentTemperature = updatedWeatherModel.CurrentTemperature;
                         _weatherModel.CurrentDescription = updatedWeatherModel.CurrentDescription;
                         _weatherModel.HistoricalData = updatedWeatherModel.HistoricalData;
+                        _weatherModel.Recorded_History = updatedWeatherModel.Recorded_History;
                         //_weatherModel.Forcast = updatedWeatherModel.Forcast;
 
                         await _hubContext.Clients.All.SendAsync("ReceiveWeatherUpdate", _weatherModel);

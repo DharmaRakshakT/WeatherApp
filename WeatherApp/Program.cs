@@ -1,4 +1,5 @@
 using WeatherApp.Hubs;
+using WeatherApp.Models;
 using WeatherApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<Weather_History>();
 builder.Services.AddHttpClient<WeatherService>();
 builder.Services.AddSingleton<WeatherUpdateService>();
 builder.Services.AddHostedService(provider => provider.GetService<WeatherUpdateService>());

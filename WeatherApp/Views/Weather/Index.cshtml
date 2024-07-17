@@ -1,5 +1,15 @@
 ﻿@model WeatherApp.Models.WeatherModel
 
+@functions {
+    public string ToTitleCase(string str)
+    {
+        if (string.IsNullOrEmpty(str))
+            return str;
+
+        return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str.ToLower());
+    }
+}
+
 @{
     ViewData["Title"] = "Weather Data";
 }
@@ -16,15 +26,19 @@
 <form asp-action="SetWeatherConfig" method="post">
     <div class="form-group">
         <label for="location">Location (City Name):</label>
-        <input type="text" id="location" name="location" class="form-control" required />
+        <input type="text" id="location" name="location" asp-for="Location" class="form-control" required />
     </div>
     <div class="form-group">
         <label for="updateInterval">Update Interval (minutes):</label>
-        <input type="number" id="updateInterval" name="updateInterval" class="form-control" required />
+        <input type="number" id="updateInterval" name="updateInterval" asp-for="UpdateInterval" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="numberOfDays">Number of Days for Recorded Historical Data:</label>
+        <input type="number" id="numberOfDays_recorded" name="numberOfDays_recorded" asp-for="History_Days" class="form-control" required />
     </div>
     <div class="form-group">
         <label for="numberOfDays">Number of Days for Forcast Data:</label>
-        <input type="number" id="numberOfDays" name="numberOfDays" class="form-control" required />
+        <input type="number" id="numberOfDays" name="numberOfDays" asp-for="NumberOfDays" class="form-control" required />
     </div>
     <br />
     <button type="submit" class="btn btn-primary">Set Weather Configuration</button>
@@ -32,11 +46,37 @@
 
 @if (Model != null)
 {
-    <h2>Current Weather for @Model.Location</h2>
+    <h2>Current Weather for @ToTitleCase(Model.Location)</h2>
     <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
     <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
-
-    <h2>Forcast Weather Data for @Model.Location</h2>
+    @if(Model.Recorded_History != null)
+    {
+        <h2>Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days Days</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Temperature (°C)</th>
+                    <th>Description</th>
+                    <th>Wind Speed (m/s)</th>
+                </tr>
+            </thead>
+            <tbody id="recordedDataBody">
+                @foreach (var data in Model.Recorded_History.Records)
+                {
+                    <tr>
+                        <td>@data.Date.ToString("yyyy-MM-dd")</td>
+                        <td>@data.Timestamp.ToString("HH:mm:ss")</td>
+                        <td>@data.Temperature</td>
+                        <td>@data.Description</td>
+                        <td>@data.WindSpeed</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <h2>Weather Forcast Weather Data at ToTitleCase(Model.Location) for @Model.NumberOfDays Days</h2>
     <table class="table">
         <thead>
             <tr>
@@ -63,6 +103,11 @@
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"></script>
     <script type="text/javascript">
+
+        $(document).ready(function () {
+
+            });
+
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/weatherHub")
             .build();
@@ -95,6 +140,36 @@
 
                 historicalDataBody.appendChild(row);
             });
+
+            const recordedDataBody = document.getElementById("recordedDataBody");
+            recordedDataBody.innerHTML = '';
+
+            weatherModel.recorded_History.records.forEach(data => {
+                const row = document.createElement("tr");
+
+                const dateCell = document.createElement("td");
+                dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
+                row.appendChild(dateCell);
+
+                const timeCell = document.createElement("td");
+                timeCell.innerText = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                row.appendChild(timeCell);
+
+                const tempCell = document.createElement("td");
+                tempCell.innerText = data.temperature;
+                row.appendChild(tempCell);
+
+                const descCell = document.createElement("td");
+                descCell.innerText = data.description;
+                row.appendChild(descCell);
+
+                const windCell = document.createElement("td");
+                windCell.innerText = data.windSpeed;
+                row.appendChild(windCell);
+
+                recordedDataBody.appendChild(row);
+            });
+
         });
 
         connection.start().catch(err => console.error(err.toString()));
