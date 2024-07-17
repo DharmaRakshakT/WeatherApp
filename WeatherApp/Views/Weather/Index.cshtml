@@ -1,0 +1,102 @@
+﻿@model WeatherApp.Models.WeatherModel
+
+@{
+    ViewData["Title"] = "Weather Data";
+}
+
+<h2>Configure Weather</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<form asp-action="SetWeatherConfig" method="post">
+    <div class="form-group">
+        <label for="location">Location (City Name):</label>
+        <input type="text" id="location" name="location" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="updateInterval">Update Interval (minutes):</label>
+        <input type="number" id="updateInterval" name="updateInterval" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="numberOfDays">Number of Days for Forcast Data:</label>
+        <input type="number" id="numberOfDays" name="numberOfDays" class="form-control" required />
+    </div>
+    <br />
+    <button type="submit" class="btn btn-primary">Set Weather Configuration</button>
+</form>
+
+@if (Model != null)
+{
+    <h2>Current Weather for @Model.Location</h2>
+    <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
+    <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
+
+    <h2>Forcast Weather Data for @Model.Location</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temperature (°C)</th>
+                <th>Description</th>
+                <th>Wind Speed (m/s)</th>
+            </tr>
+        </thead>
+        <tbody id="historicalDataBody">
+            @foreach (var data in Model.HistoricalData)
+            {
+                <tr>
+                    <td>@data.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@data.Temperature</td>
+                    <td>@data.Description</td>
+                    <td>@data.WindSpeed</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"></script>
+    <script type="text/javascript">
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/weatherHub")
+            .build();
+
+        connection.on("ReceiveWeatherUpdate", function (weatherModel) {
+            document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
+            document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
+
+            const historicalDataBody = document.getElementById("historicalDataBody");
+            historicalDataBody.innerHTML = '';
+
+            weatherModel.historicalData.forEach(data => {
+                const row = document.createElement("tr");
+
+                const dateCell = document.createElement("td");
+                dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
+                row.appendChild(dateCell);
+
+                const tempCell = document.createElement("td");
+                tempCell.innerText = data.temperature;
+                row.appendChild(tempCell);
+
+                const descCell = document.createElement("td");
+                descCell.innerText = data.description;
+                row.appendChild(descCell);
+
+                const windCell = document.createElement("td");
+                windCell.innerText = data.windSpeed;
+                row.appendChild(windCell);
+
+                historicalDataBody.appendChild(row);
+            });
+        });
+
+        connection.start().catch(err => console.error(err.toString()));
+    </script>
+}
