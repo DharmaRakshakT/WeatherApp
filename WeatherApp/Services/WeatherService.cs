@@ -39,7 +39,7 @@ namespace WeatherApp.Services
             var weatherData = await GetWeatherDataAsync(lat, lon);
 
             // Filter weather data by date
-            weatherModel.HistoricalData = FilterWeatherData(weatherData, numberOfDays);
+            weatherModel.HistoricalData.Records = FilterWeatherData(weatherData, numberOfDays);
 
             //var historicalData = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays);
             //weatherModel.HistoricalData = historicalData;

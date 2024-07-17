@@ -47,7 +47,7 @@
             </tr>
         </thead>
         <tbody id="historicalDataBody">
-            @foreach (var data in Model.HistoricalData)
+            @foreach (var data in Model.HistoricalData.Records)
             {
                 <tr>
                     <td>@data.Date.ToString("yyyy-MM-dd")</td>
@@ -74,7 +74,7 @@
             const historicalDataBody = document.getElementById("historicalDataBody");
             historicalDataBody.innerHTML = '';
 
-            weatherModel.historicalData.forEach(data => {
+            weatherModel.historicalData.records.forEach(data => {
                 const row = document.createElement("tr");
 
                 const dateCell = document.createElement("td");
