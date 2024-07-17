@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using WeatherApp.Hubs;
 using WeatherApp.Models;
 using WeatherApp.Services;
+using System;
 
 namespace WeatherApp.Controllers
 {
@@ -25,33 +26,53 @@ namespace WeatherApp.Controllers
 
         public IActionResult Index()
         {
-
             return View(_weatherModel);
         }
 
         [HttpPost]
-        public async Task<IActionResult> SetWeatherConfig(WeatherModel weatherModel,string location, int updateInterval, int numberOfDays , int numberOfDays_recorded)
+        public async Task<IActionResult> SetWeatherConfig(WeatherModel weatherModel)
         {
             try
             {
-                
-                _weatherModel = await _weatherService.GetWeatherDataAsync(location, numberOfDays,numberOfDays_recorded);
-                _weatherModel.UpdateInterval = updateInterval;
-                _weatherModel.NumberOfDays = numberOfDays;
-                _weatherModel.History_Days = numberOfDays_recorded;
-                _weatherModel.Location = location;
-                //_weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location,numberOfDays_recorded);
-            
-                
+                // Server-side validation
+                if (string.IsNullOrEmpty(weatherModel.Location))
+                {
+                    throw new ArgumentException("Location cannot be empty.");
+                }
+                if (weatherModel.UpdateInterval <= 0)
+                {
+                    throw new ArgumentException("Update interval must be a positive integer greater than 0.");
+                }
+                if (weatherModel.History_Days < 0)
+                {
+                    throw new ArgumentException("Number of Days for Recorded Historical Data must be a valid number and cannot be negative.");
+                }
+                if (weatherModel.NumberOfDays < 0)
+                {
+                    throw new ArgumentException("Number of Days for Forecast Data must be a valid number and cannot be negative.");
+                }
+
+                // Proceed with the rest of the method if validation passes
+                _weatherModel = await _weatherService.GetWeatherDataAsync(weatherModel.Location, weatherModel.NumberOfDays, weatherModel.History_Days);
+                _weatherModel.UpdateInterval = weatherModel.UpdateInterval;
+                _weatherModel.NumberOfDays = weatherModel.NumberOfDays;
+                _weatherModel.History_Days = weatherModel.History_Days;
+                _weatherModel.Location = weatherModel.Location;
+                //_weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location, numberOfDays_recorded);
+
                 _weatherUpdateService.ConfigureWeatherModel(_weatherModel);
 
                 await _hubContext.Clients.All.SendAsync("ReceiveWeatherUpdate", _weatherModel);
 
                 TempData["SuccessMessage"] = "Weather configuration updated successfully.";
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "An unexpected error occurred: " + ex.Message;
             }
 
             return RedirectToAction("Index");

@@ -25,7 +25,7 @@ namespace WeatherApp.Services
             _weather_History = weather_History;
         }
 
-        public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays , int numberOfDays_Recorded=0)
+        public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays=0 , int numberOfDays_Recorded=0)
         {
             var weatherModel = new WeatherModel { Location = location, NumberOfDays = numberOfDays };
 
