@@ -26,6 +26,7 @@ namespace WeatherApp.Services
 
         public void ConfigureWeatherModel(WeatherModel weatherModel)
         {
+            _logger.LogInformation("Configuring weather model.");
             _weatherModel = weatherModel;
             _cancellationTokenSource?.Cancel();
         }
@@ -38,6 +39,7 @@ namespace WeatherApp.Services
                 {
                     try
                     {
+                        _logger.LogInformation("Fetching updated weather data.");
                         var updatedWeatherModel = await _weatherService.GetWeatherDataAsync(_weatherModel.Location, _weatherModel.NumberOfDays,_weatherModel.History_Days);
                         
                         _weatherModel.CurrentTemperature = updatedWeatherModel.CurrentTemperature;
@@ -48,6 +50,8 @@ namespace WeatherApp.Services
                         //_weatherModel.Forcast = updatedWeatherModel.Forcast;
 
                         await _hubContext.Clients.All.SendAsync("ReceiveWeatherUpdate", _weatherModel);
+                        _logger.LogInformation("Weather data updated and broadcasted successfully.");
+
                     }
                     catch (Exception ex)
                     {

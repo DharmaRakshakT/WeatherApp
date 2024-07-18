@@ -15,13 +15,16 @@ namespace WeatherApp.Controllers
         private readonly IHubContext<WeatherHub> _hubContext;
         private static WeatherModel _weatherModel;
         private readonly Weather_History _weather_History;
+        private readonly ILogger<WeatherController> _logger;
 
-        public WeatherController(WeatherService weatherService, WeatherUpdateService weatherUpdateService, IHubContext<WeatherHub> hubContext, Weather_History weather_History)
+
+        public WeatherController(WeatherService weatherService, WeatherUpdateService weatherUpdateService, IHubContext<WeatherHub> hubContext, Weather_History weather_History, ILogger<WeatherController> logger)
         {
             _weatherService = weatherService;
             _weatherUpdateService = weatherUpdateService;
             _hubContext = hubContext;
             _weather_History = weather_History;
+            _logger = logger;
         }
 
         public IActionResult Index()
@@ -64,15 +67,17 @@ namespace WeatherApp.Controllers
                 _weatherUpdateService.ConfigureWeatherModel(_weatherModel);
 
                 await _hubContext.Clients.All.SendAsync("ReceiveWeatherUpdate", _weatherModel);
-
+                _logger.LogInformation("Weather configuration updated successfully.");
                 TempData["SuccessMessage"] = "Weather configuration updated successfully.";
             }
             catch (ArgumentException ex)
             {
+                _logger.LogWarning(ex, "Validation error occurred while setting weather configuration.");
                 TempData["ErrorMessage"] = ex.Message;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "An unexpected error occurred while setting weather configuration.");
                 TempData["ErrorMessage"] = "An unexpected error occurred: " + ex.Message;
             }
 

@@ -29,33 +29,44 @@ namespace WeatherApp.Services
 
         public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays=0 , int numberOfDays_Recorded=0)
         {
+            _logger.LogInformation("Fetching weather data for location: {Location}", location);
+
             var weatherModel = new WeatherModel { Location = location, NumberOfDays = numberOfDays, History_Days= numberOfDays_Recorded };
 
-            // Get latitude and longitude of the location
-            var (lat, lon) = await GetCoordinatesAsync(location);
+            try
+            {
+                // Get latitude and longitude of the location
+                var (lat, lon) = await GetCoordinatesAsync(location);
 
-            // Get current weather data
-            var currentWeather = await GetCurrentWeatherAsync(lat, lon);
-            weatherModel.CurrentTemperature = currentWeather.Item1;
-            weatherModel.CurrentDescription = currentWeather.Item2;
+                // Get current weather data
+                var currentWeather = await GetCurrentWeatherAsync(lat, lon);
+                weatherModel.CurrentTemperature = currentWeather.Item1;
+                weatherModel.CurrentDescription = currentWeather.Item2;
 
-            //Weather_History weather_History = new Weather_History();
-            //weather_History.Records=await GetHistoricalWeatherDataAsync(lat, lon,numberOfDays);
+                //Weather_History weather_History = new Weather_History();
+                //weather_History.Records=await GetHistoricalWeatherDataAsync(lat, lon,numberOfDays);
 
-            // Get weather data
-            var weatherData = await GetWeatherDataAsync(lat, lon);
-            DateTime dateTime = DateTime.Now;
-            var record = new WeatherData { Timestamp = dateTime, Temperature = currentWeather.Item1, Description = currentWeather.Item2, Date=dateTime.Date, WindSpeed= currentWeather.Item3 ,City=location};
+                // Get weather data
+                var weatherData = await GetWeatherDataAsync(lat, lon);
+                DateTime dateTime = DateTime.Now;
+                var record = new WeatherData { Timestamp = dateTime, Temperature = currentWeather.Item1, Description = currentWeather.Item2, Date = dateTime.Date, WindSpeed = currentWeather.Item3, City = location };
 
-            _weather_History.Records.Add(record);
+                _weather_History.Records.Add(record);
 
-            weatherModel.CurrentDate = DateTime.Now;
-            weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location,numberOfDays_Recorded);
-            // Filter weather data by date
-            weatherModel.ForecastedData.Records = FilterWeatherData(weatherData, numberOfDays);
+                weatherModel.CurrentDate = DateTime.Now;
+                weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location, numberOfDays_Recorded);
+                // Filter weather data by date
+                weatherModel.ForecastedData.Records = FilterWeatherData(weatherData, numberOfDays);
 
-            weatherModel.Historical_data.Records= await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays_Recorded, location);
-            
+                weatherModel.Historical_data.Records = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays_Recorded, location);
+                _logger.LogInformation("Weather data fetched successfully for location: {Location}", location);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching weather data for location: {Location}", location);
+                throw;
+            }
 
             return weatherModel;
         }
