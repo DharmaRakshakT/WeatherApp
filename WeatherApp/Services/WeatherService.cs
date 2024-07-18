@@ -43,8 +43,7 @@ namespace WeatherApp.Services
                 weatherModel.CurrentTemperature = currentWeather.Item1;
                 weatherModel.CurrentDescription = currentWeather.Item2;
 
-                //Weather_History weather_History = new Weather_History();
-                //weather_History.Records=await GetHistoricalWeatherDataAsync(lat, lon,numberOfDays);
+                
 
                 // Get weather data
                 var weatherData = await GetWeatherDataAsync(lat, lon);
@@ -114,18 +113,22 @@ namespace WeatherApp.Services
         {
             var filteredData = new List<WeatherData>();
             var groupedData = weatherData.GroupBy(entry => DateTime.Parse(entry["dt_txt"].Value<string>()).Date)
-                                         .Take(numberOfDays);
+                                         .Take(numberOfDays+1);
 
             foreach (var group in groupedData)
             {
                 var firstEntry = group.First();
-                filteredData.Add(new WeatherData
+                DateTime entryDate = DateTime.Parse(firstEntry["dt_txt"].Value<string>());
+                if (entryDate.Date != DateTime.Now.Date)
                 {
-                    Date = DateTime.Parse(firstEntry["dt_txt"].Value<string>()),
-                    Temperature = firstEntry["main"]["temp"].Value<double>(),
-                    Description = firstEntry["weather"][0]["description"].Value<string>(),
-                    WindSpeed = firstEntry["wind"]["speed"].Value<double>()
-                });
+                    filteredData.Add(new WeatherData
+                    {
+                        Date = entryDate,
+                        Temperature = firstEntry["main"]["temp"].Value<double>(),
+                        Description = firstEntry["weather"][0]["description"].Value<string>(),
+                        WindSpeed = firstEntry["wind"]["speed"].Value<double>()
+                    });
+                }
             }
 
             return filteredData;
@@ -167,13 +170,17 @@ namespace WeatherApp.Services
 
             foreach (var summary in dailySummaries)
             {
-                WeatherData weather = new WeatherData();
-                weather.Date = summary.Date;
-                weather.Temperature = Math.Round(summary.TempAvg,2);
-                weather.Description = summary.WeatherDescription;
-                weather.WindSpeed = Math.Round(summary.WindSpeedAvg,2);
-                weather.City = location;
-                weatherData.Add(weather);
+                DateTime dateTime1 = DateTime.Now;
+                if (summary.Date != dateTime1.Date)
+                {
+                    WeatherData weather = new WeatherData();
+                    weather.Date = summary.Date;
+                    weather.Temperature = Math.Round(summary.TempAvg, 2);
+                    weather.Description = summary.WeatherDescription;
+                    weather.WindSpeed = Math.Round(summary.WindSpeedAvg, 2);
+                    weather.City = location;
+                    weatherData.Add(weather);
+                }
                
             }
             weatherData= weatherData.OrderByDescending(record => record.Date).ToList();
