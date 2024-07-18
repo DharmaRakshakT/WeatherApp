@@ -36,7 +36,7 @@
     </div>
     <div class="form-group">
         <label for="numberOfDays">Number of Days for Recorded Historical Data:</label>
-        <input type="number" id="numberOfDays_recorded" name="numberOfDays_recorded" asp-for="History_Days" class="form-control" required />
+        <input type="number" id="numberOfDays_recorded" name="History_Days" asp-for="History_Days" class="form-control" required />
         <span id="numberOfDaysRecordedError" class="text-danger"></span>
     </div>
     <div class="form-group">
@@ -53,7 +53,7 @@
     <h2>Current Weather for @ToTitleCase(Model.Location)</h2>
     <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
     <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
-    @if (Model.Recorded_History != null)
+    @if (Model.Recorded_History != null && Model.History_Days!=0)
     {
         <h2>Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days Days</h2>
         <table class="table">
@@ -80,28 +80,31 @@
             </tbody>
         </table>
     }
-    <h2>Weather Forecast Weather Data at @ToTitleCase(Model.Location) for @Model.NumberOfDays Days</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Temperature (°C)</th>
-                <th>Description</th>
-                <th>Wind Speed (m/s)</th>
-            </tr>
-        </thead>
-        <tbody id="historicalDataBody">
-            @foreach (var data in Model.HistoricalData.Records)
-            {
+    @if (Model.ForecastedData != null && Model.NumberOfDays!= 0)
+    {
+        <h2>Weather Forecast Weather Data at @ToTitleCase(Model.Location) for @Model.NumberOfDays Days</h2>
+        <table class="table">
+            <thead>
                 <tr>
-                    <td>@data.Date.ToString("yyyy-MM-dd")</td>
-                    <td>@data.Temperature</td>
-                    <td>@data.Description</td>
-                    <td>@data.WindSpeed</td>
+                    <th>Date</th>
+                    <th>Temperature (°C)</th>
+                    <th>Description</th>
+                    <th>Wind Speed (m/s)</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody id="forecastedDataBody">
+                @foreach (var data in Model.ForecastedData.Records)
+                {
+                    <tr>
+                        <td>@data.Date.ToString("yyyy-MM-dd")</td>
+                        <td>@data.Temperature</td>
+                        <td>@data.Description</td>
+                        <td>@data.WindSpeed</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 }
 
 @section Scripts {
@@ -176,10 +179,10 @@
             document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
             document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
 
-            const historicalDataBody = document.getElementById("historicalDataBody");
+            const historicalDataBody = document.getElementById("forecastedDataBody");
             historicalDataBody.innerHTML = '';
 
-            weatherModel.historicalData.records.forEach(data => {
+            weatherModel.forecastedData.records.forEach(data => {
                 const row = document.createElement("tr");
 
                 const dateCell = document.createElement("td");

@@ -42,7 +42,7 @@ namespace WeatherApp.Services
                         
                         _weatherModel.CurrentTemperature = updatedWeatherModel.CurrentTemperature;
                         _weatherModel.CurrentDescription = updatedWeatherModel.CurrentDescription;
-                        _weatherModel.HistoricalData = updatedWeatherModel.HistoricalData;
+                        _weatherModel.ForecastedData = updatedWeatherModel.ForecastedData;
                         _weatherModel.Recorded_History = updatedWeatherModel.Recorded_History;
                         //_weatherModel.Forcast = updatedWeatherModel.Forcast;
 

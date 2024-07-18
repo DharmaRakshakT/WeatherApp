@@ -27,7 +27,7 @@ namespace WeatherApp.Services
 
         public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays=0 , int numberOfDays_Recorded=0)
         {
-            var weatherModel = new WeatherModel { Location = location, NumberOfDays = numberOfDays };
+            var weatherModel = new WeatherModel { Location = location, NumberOfDays = numberOfDays, History_Days= numberOfDays_Recorded };
 
             // Get latitude and longitude of the location
             var (lat, lon) = await GetCoordinatesAsync(location);
@@ -46,7 +46,7 @@ namespace WeatherApp.Services
 
             weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location,numberOfDays_Recorded);
             // Filter weather data by date
-            weatherModel.HistoricalData.Records = FilterWeatherData(weatherData, numberOfDays);
+            weatherModel.ForecastedData.Records = FilterWeatherData(weatherData, numberOfDays);
 
             //var historicalData = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays);
             //weatherModel.HistoricalData = historicalData;
