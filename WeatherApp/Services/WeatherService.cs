@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WeatherApp.Models;
 
@@ -52,9 +54,8 @@ namespace WeatherApp.Services
             // Filter weather data by date
             weatherModel.ForecastedData.Records = FilterWeatherData(weatherData, numberOfDays);
 
-            //
-            var historicalData = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays_Recorded);
-            weatherModel.HistoricalData.Records = historicalData;
+            weatherModel.Historical_data.Records= await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays_Recorded, location);
+            
 
             return weatherModel;
         }
@@ -119,61 +120,53 @@ namespace WeatherApp.Services
             return filteredData;
         }
 
-        private async Task<List<WeatherData>> GetHistoricalWeatherDataAsync(double lat, double lon, int numberOfDays)
+        private async Task<List<WeatherData>> GetHistoricalWeatherDataAsync(double lat, double lon, int numberOfDays,string location)
         {
-            string weatherApiUrl = $"https://history.openweathermap.org/data/2.5/history/city?lat={lat}&lon={lon}&appid={_apiKey}&units=metric";
-            string response = await _httpClient.GetStringAsync(weatherApiUrl);
-            JObject weatherData = JObject.Parse(response);
-            return FilterWeatherData_History((JArray)weatherData["list"], numberOfDays);
+            
+            DateTime dateTime = DateTime.Now;
+            DateTime startDate = dateTime.AddDays(-numberOfDays); // Replace with your start date
+            DateTime endDate = dateTime.Date; // Replace with your end date
 
+            List<Weather_Data> allWeatherData = new List<Weather_Data>();
 
-        }
-        private List<WeatherData> FilterWeatherData_History(JArray weatherData, int numberOfDays)
-        {
-            var filteredData = new List<WeatherData>();
-
-            if (weatherData == null || weatherData.Count == 0)
+            using (HttpClient client = new HttpClient())
             {
-                _logger.LogWarning("Weather data is null or empty.");
-                return filteredData;
+                for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+                {
+                    long unixTimestamp = ((DateTimeOffset)date).ToUnixTimeSeconds();
+                    string url = $"https://history.openweathermap.org/data/2.5/history/city?lat={lat}&lon={lon}&type=hour&start={unixTimestamp}&end={unixTimestamp + 86400}&appid={_apiKey}&units=metric";
+                    HttpResponseMessage response = await client.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    WeatherApiResponse weatherResponse = JsonConvert.DeserializeObject<WeatherApiResponse>(responseBody);
+                    allWeatherData.AddRange(weatherResponse.List);
+                }
             }
 
-            // Group data by date
-            var groupedData = weatherData
-                .GroupBy(entry => DateTimeOffset.FromUnixTimeSeconds(entry["dt"].Value<long>()).Date)
-                .OrderByDescending(group => group.Key) // Order by date descending to get the latest days first
-                .Take(numberOfDays); // Take only the required number of days
-
-            foreach (var group in groupedData)
-            {
-                var firstEntry = group.FirstOrDefault();
-                if (firstEntry == null)
+            var dailySummaries = allWeatherData
+                .GroupBy(w => DateTimeOffset.FromUnixTimeSeconds(w.Dt).Date)
+                .Select(g => new
                 {
-                    _logger.LogWarning("First entry in group is null.");
-                    continue;
-                }
-
-                var date = firstEntry["dt"].Value<long>();
-                var temperature = firstEntry["main"]?["temp"]?.Value<double>();
-                var description = firstEntry["weather"]?[0]?["description"]?.Value<string>();
-                var windSpeed = firstEntry["wind"]?["speed"]?.Value<double>();
-
-                if (temperature == null || description == null || windSpeed == null)
-                {
-                    _logger.LogWarning("One or more weather data fields are null.");
-                    continue;
-                }
-
-                filteredData.Add(new WeatherData
-                {
-                    Date = DateTimeOffset.FromUnixTimeSeconds(date).DateTime,
-                    Temperature = temperature.Value,
-                    Description = description,
-                    WindSpeed = windSpeed.Value
+                    Date = g.Key,
+                    TempAvg = Math.Round(g.Average(w => w.Main.Temp), 2),
+                    WindSpeedAvg = Math.Round(g.Average(w => w.Wind.Speed), 2),
+                    WeatherDescription = g.First().Weather.First().Description
                 });
-            }
+            List<WeatherData> weatherData =  new List<WeatherData>();
 
-            return filteredData;
+            foreach (var summary in dailySummaries)
+            {
+                WeatherData weather = new WeatherData();
+                weather.Date = summary.Date;
+                weather.Temperature = Math.Round(summary.TempAvg,2);
+                weather.Description = summary.WeatherDescription;
+                weather.WindSpeed = Math.Round(summary.WindSpeedAvg,2);
+                weather.City = location;
+                weatherData.Add(weather);
+               
+            }
+            weatherData= weatherData.OrderByDescending(record => record.Date).ToList();
+            return weatherData;
         }
 
     }

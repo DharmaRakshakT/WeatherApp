@@ -93,7 +93,7 @@
                             <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
                             <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
                             <p>Date: <span id="currentDate">@Model.CurrentDate.ToString("yyyy-MM-dd")</span></p>
-                            <p>Time: <span id="currentTime">@Model.CurrentDate.ToString("HH:mm:ss")</span></p>
+                            <p>Time: <span id="currentTime">@Model.CurrentDate.ToString("HH:mm")</span></p>
 
                         </div>
                     </div>
@@ -128,7 +128,7 @@
                                             {
                                                 <tr>
                                                     <td>@data.Date.ToString("yyyy-MM-dd")</td>
-                                                    <td>@data.Timestamp.ToString("HH:mm:ss")</td>
+                                                    <td>@data.Timestamp.ToString("HH:mm")</td>
                                                     <td>@data.Temperature</td>
                                                     <td>@data.Description</td>
                                                     <td>@data.WindSpeed</td>
@@ -142,14 +142,14 @@
                     </div>
                 </div>
             }
-            @if (Model.HistoricalData != null && Model.History_Days != 0)
+            @if (Model.Historical_data != null && Model.History_Days != 0)
             {
                 <div class="row mt-4">
                     <div class="col-md-8 offset-md-2">
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h2>
-                                    Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days days
+                                    Historical Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days days
 
                                 </h2>
                             </div>
@@ -164,8 +164,8 @@
                                                 <th>Wind Speed (m/s)</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="historyDataBody">
-                                            @foreach (var data in Model.HistoricalData.Records)
+                                        <tbody id="recordedDataBody">
+                                            @foreach (var data in Model.Historical_data.Records)
                                             {
                                                 <tr>
                                                     <td>@data.Date.ToString("yyyy-MM-dd")</td>
@@ -294,33 +294,10 @@
                 document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
                 document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
                 document.getElementById("currentDate").innerText = new Date(weatherModel.currentDate).toISOString().split('T')[0];
-                document.getElementById("currentTime").innerText = new Date(weatherModel.currentDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                document.getElementById("currentTime").innerText = new Date(weatherModel.currentDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
 
-                const historicalDataBody = document.getElementById("forecastedDataBody");
-                historicalDataBody.innerHTML = '';
-
-                weatherModel.forecastedData.records.forEach(data => {
-                    const row = document.createElement("tr");
-
-                    const dateCell = document.createElement("td");
-                    dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
-                    row.appendChild(dateCell);
-
-                    const tempCell = document.createElement("td");
-                    tempCell.innerText = data.temperature;
-                    row.appendChild(tempCell);
-
-                    const descCell = document.createElement("td");
-                    descCell.innerText = data.description;
-                    row.appendChild(descCell);
-
-                    const windCell = document.createElement("td");
-                    windCell.innerText = data.windSpeed;
-                    row.appendChild(windCell);
-
-                    historicalDataBody.appendChild(row);
-                });
+                
 
                 const recordedDataBody = document.getElementById("recordedDataBody");
                 recordedDataBody.innerHTML = '';
@@ -333,7 +310,7 @@
                     row.appendChild(dateCell);
 
                     const timeCell = document.createElement("td");
-                    timeCell.innerText = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    timeCell.innerText = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                     row.appendChild(timeCell);
 
                     const tempCell = document.createElement("td");

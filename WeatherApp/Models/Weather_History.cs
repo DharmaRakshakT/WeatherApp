@@ -22,6 +22,10 @@
                 .ToList();
             }
         }
+        public List<WeatherData> OrderRecords()
+        {
+            return Records.OrderByDescending(record => record.Date).ToList();
+        }
 
     }
     public class WeatherData

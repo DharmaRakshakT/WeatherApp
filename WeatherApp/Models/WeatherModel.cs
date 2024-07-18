@@ -18,8 +18,9 @@ public class WeatherModel
     public DateTime CurrentDate { get; set; }
     public Weather_History ForecastedData { get; set; } = new Weather_History();
     public Weather_History Recorded_History { get; set; } = new Weather_History();
+    public Weather_History Historical_data { get; set; } = new Weather_History();
 
-    public Weather_History HistoricalData { get; set; } = new Weather_History();
+
 }
 
 
