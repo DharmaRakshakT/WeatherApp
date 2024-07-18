@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
@@ -31,7 +32,7 @@ namespace WeatherApp.Services
         {
             _logger.LogInformation("Fetching weather data for location: {Location}", location);
 
-            var weatherModel = new WeatherModel { Location = location, NumberOfDays = numberOfDays, History_Days= numberOfDays_Recorded };
+            var weatherModel = new WeatherModel { Location = location, Historical_Data_Days = numberOfDays, Recorded_History_Days= numberOfDays_Recorded };
 
             try
             {
@@ -41,12 +42,12 @@ namespace WeatherApp.Services
                 // Get current weather data
                 var currentWeather = await GetCurrentWeatherAsync(lat, lon);
                 weatherModel.CurrentTemperature = currentWeather.Item1;
+                currentWeather.Item2 = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(currentWeather.Item2.ToLower());
                 weatherModel.CurrentDescription = currentWeather.Item2;
 
                 
 
                 // Get weather data
-                var weatherData = await GetWeatherDataAsync(lat, lon);
                 DateTime dateTime = DateTime.Now;
                 var record = new WeatherData { Timestamp = dateTime, Temperature = currentWeather.Item1, Description = currentWeather.Item2, Date = dateTime.Date, WindSpeed = currentWeather.Item3, City = location };
 
@@ -54,10 +55,9 @@ namespace WeatherApp.Services
 
                 weatherModel.CurrentDate = DateTime.Now;
                 weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location, numberOfDays_Recorded);
-                // Filter weather data by date
-                weatherModel.ForecastedData.Records = FilterWeatherData(weatherData, numberOfDays);
 
-                weatherModel.Historical_data.Records = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays_Recorded, location);
+                weatherModel.Historical_data.Records = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays, location);
+
                 _logger.LogInformation("Weather data fetched successfully for location: {Location}", location);
 
             }
@@ -101,38 +101,7 @@ namespace WeatherApp.Services
             return (temperature, description,windspeed);
         }
 
-        private async Task<JArray> GetWeatherDataAsync(double lat, double lon)
-        {
-            string weatherApiUrl = $"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={_apiKey}&units=metric";
-            string response = await _httpClient.GetStringAsync(weatherApiUrl);
-            JObject weatherData = JObject.Parse(response);
-            return (JArray)weatherData["list"];
-        }
 
-        private List<WeatherData> FilterWeatherData(JArray weatherData, int numberOfDays)
-        {
-            var filteredData = new List<WeatherData>();
-            var groupedData = weatherData.GroupBy(entry => DateTime.Parse(entry["dt_txt"].Value<string>()).Date)
-                                         .Take(numberOfDays+1);
-
-            foreach (var group in groupedData)
-            {
-                var firstEntry = group.First();
-                DateTime entryDate = DateTime.Parse(firstEntry["dt_txt"].Value<string>());
-                if (entryDate.Date != DateTime.Now.Date)
-                {
-                    filteredData.Add(new WeatherData
-                    {
-                        Date = entryDate,
-                        Temperature = firstEntry["main"]["temp"].Value<double>(),
-                        Description = firstEntry["weather"][0]["description"].Value<string>(),
-                        WindSpeed = firstEntry["wind"]["speed"].Value<double>()
-                    });
-                }
-            }
-
-            return filteredData;
-        }
 
         private async Task<List<WeatherData>> GetHistoricalWeatherDataAsync(double lat, double lon, int numberOfDays,string location)
         {
@@ -176,7 +145,7 @@ namespace WeatherApp.Services
                     WeatherData weather = new WeatherData();
                     weather.Date = summary.Date;
                     weather.Temperature = Math.Round(summary.TempAvg, 2);
-                    weather.Description = summary.WeatherDescription;
+                    weather.Description = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(summary.WeatherDescription.ToLower());
                     weather.WindSpeed = Math.Round(summary.WindSpeedAvg, 2);
                     weather.City = location;
                     weatherData.Add(weather);

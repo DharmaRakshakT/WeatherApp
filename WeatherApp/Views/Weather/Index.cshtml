@@ -1,7 +1,7 @@
 ﻿@model WeatherApp.Models.WeatherModel
 
 @functions {
-    public string ToTitleCase(string str)
+    public string toTitleCase(string str)
     {
         if (string.IsNullOrEmpty(str))
             return str;
@@ -65,12 +65,12 @@
                             </div>
                             <div class="form-group">
                                 <label for="numberOfDays">Number of Days for Recorded Historical Data:</label>
-                                <input type="number" id="numberOfDays_recorded" name="History_Days" asp-for="History_Days" class="form-control" required />
+                                <input type="number" id="numberOfDays_recorded" name="Recorded_History_Days" asp-for="Recorded_History_Days" class="form-control" required />
                                 <span id="numberOfDaysRecordedError" class="text-danger"></span>
                             </div>
                             <div class="form-group">
-                                <label for="numberOfDays">Number of Days for Forecast Data:</label>
-                                <input type="number" id="numberOfDays" name="numberOfDays" asp-for="NumberOfDays" class="form-control" required />
+                                <label for="numberOfDays">Number of Days for Historical Data:</label>
+                                <input type="number" id="numberOfDays" name="Historical_Data_Days" asp-for="Historical_Data_Days" class="form-control" required />
                                 <span id="numberOfDaysError" class="text-danger"></span>
                             </div>
                             <br />
@@ -87,11 +87,11 @@
                 <div class="col-md-8 offset-md-2">
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h2>Current Weather for @ToTitleCase(Model.Location)</h2>
+                            <h2>Current Weather for @toTitleCase(Model.Location)</h2>
                         </div>
                         <div class="card-body">
                             <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
-                            <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
+                            <p>Description: <span id="currentDescription">@toTitleCase(Model.CurrentDescription)</span></p>
                             <p>Date: <span id="currentDate">@Model.CurrentDate.ToString("yyyy-MM-dd")</span></p>
                             <p>Time: <span id="currentTime">@Model.CurrentDate.ToString("HH:mm")</span></p>
 
@@ -100,14 +100,14 @@
                 </div>
             </div>
 
-            @if (Model.Recorded_History != null && Model.History_Days != 0)
+            @if (Model.Recorded_History != null && Model.Recorded_History_Days != 0)
             {
                 <div class="row mt-4">
                     <div class="col-md-8 offset-md-2">
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h2>
-                                    Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days days
+                                    Recorded Weather Data at @toTitleCase(Model.Location) for past @Model.Recorded_History_Days days
                                     
                                 </h2>
                             </div>
@@ -142,14 +142,14 @@
                     </div>
                 </div>
             }
-            @if (Model.Historical_data != null && Model.History_Days != 0)
+            @if (Model.Historical_data != null && Model.Historical_Data_Days != 0)
             {
                 <div class="row mt-4">
                     <div class="col-md-8 offset-md-2">
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h2>
-                                    Historical Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days days
+                                    Historical Weather Data at @toTitleCase(Model.Location) for past @Model.Historical_Data_Days days
 
                                 </h2>
                             </div>
@@ -166,43 +166,6 @@
                                         </thead>
                                         <tbody id="recordedDataBody">
                                             @foreach (var data in Model.Historical_data.Records)
-                                            {
-                                                <tr>
-                                                    <td>@data.Date.ToString("yyyy-MM-dd")</td>
-                                                    <td>@data.Temperature</td>
-                                                    <td>@data.Description</td>
-                                                    <td>@data.WindSpeed</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-            @if (Model.ForecastedData != null && Model.NumberOfDays != 0)
-            {
-                <div class="row mt-4">
-                    <div class="col-md-8 offset-md-2">
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h2>Weather Forecast Data at @ToTitleCase(Model.Location) for @Model.NumberOfDays Days</h2>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead class="thead-dark">
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Temperature (°C)</th>
-                                                <th>Description</th>
-                                                <th>Wind Speed (m/s)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="forecastedDataBody">
-                                            @foreach (var data in Model.ForecastedData.Records)
                                             {
                                                 <tr>
                                                     <td>@data.Date.ToString("yyyy-MM-dd")</td>
@@ -274,7 +237,7 @@
 
                     // Validate Number of Days for Forecast Data
                     if (!Number.isInteger(Number(numberOfDays)) || numberOfDays < 0) {
-                        $('#numberOfDaysError').text('Number of Days for Forecast Data must be a valid number and cannot be negative.');
+                        $('#numberOfDaysError').text('Number of Days for Historical Data must be a valid number and cannot be negative.');
                         isValid = false;
                     } else {
                         $('#numberOfDaysError').text('');
@@ -293,6 +256,7 @@
             connection.on("ReceiveWeatherUpdate", function (weatherModel) {
                 document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
                 document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
+
                 document.getElementById("currentDate").innerText = new Date(weatherModel.currentDate).toISOString().split('T')[0];
                 document.getElementById("currentTime").innerText = new Date(weatherModel.currentDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 

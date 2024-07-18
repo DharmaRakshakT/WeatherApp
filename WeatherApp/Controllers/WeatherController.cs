@@ -46,22 +46,22 @@ namespace WeatherApp.Controllers
                 {
                     throw new ArgumentException("Update interval must be a positive integer greater than 0.");
                 }
-                if (weatherModel.History_Days < 0)
+                if (weatherModel.Recorded_History_Days < 0)
                 {
                     throw new ArgumentException("Number of Days for Recorded Historical Data must be a valid number and cannot be negative.");
                 }
-                if (weatherModel.NumberOfDays < 0)
+                if (weatherModel.Historical_Data_Days < 0)
                 {
-                    throw new ArgumentException("Number of Days for Forecast Data must be a valid number and cannot be negative.");
+                    throw new ArgumentException("Number of Days for Historical Data must be a valid number and cannot be negative.");
                 }
 
                 // Proceed with the rest of the method if validation passes
-                _weatherModel = await _weatherService.GetWeatherDataAsync(weatherModel.Location, weatherModel.NumberOfDays, weatherModel.History_Days);
+                _weatherModel = await _weatherService.GetWeatherDataAsync(weatherModel.Location, weatherModel.Historical_Data_Days, weatherModel.Recorded_History_Days);
                 _weatherModel.UpdateInterval = weatherModel.UpdateInterval;
-                _weatherModel.NumberOfDays = weatherModel.NumberOfDays;
-                _weatherModel.History_Days = weatherModel.History_Days;
+                _weatherModel.Historical_Data_Days = weatherModel.Historical_Data_Days;
+                _weatherModel.Recorded_History_Days = weatherModel.Recorded_History_Days;
                 _weatherModel.Location = weatherModel.Location;
-                _weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(weatherModel.Location, weatherModel.History_Days);
+                _weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(weatherModel.Location, weatherModel.Recorded_History_Days);
 
                 _weatherModel.CurrentDate = DateTime.Now;
                 _weatherUpdateService.ConfigureWeatherModel(_weatherModel);

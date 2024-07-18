@@ -40,11 +40,11 @@ namespace WeatherApp.Services
                     try
                     {
                         _logger.LogInformation("Fetching updated weather data.");
-                        var updatedWeatherModel = await _weatherService.GetWeatherDataAsync(_weatherModel.Location, _weatherModel.NumberOfDays,_weatherModel.History_Days);
+                        var updatedWeatherModel = await _weatherService.GetWeatherDataAsync(_weatherModel.Location, _weatherModel.Historical_Data_Days,_weatherModel.Recorded_History_Days);
                         
                         _weatherModel.CurrentTemperature = updatedWeatherModel.CurrentTemperature;
                         _weatherModel.CurrentDescription = updatedWeatherModel.CurrentDescription;
-                        _weatherModel.ForecastedData = updatedWeatherModel.ForecastedData;
+                        _weatherModel.Historical_data = updatedWeatherModel.Historical_data;
                         _weatherModel.Recorded_History = updatedWeatherModel.Recorded_History;
                         _weatherModel.CurrentDate = updatedWeatherModel.CurrentDate;
                         //_weatherModel.Forcast = updatedWeatherModel.Forcast;
