@@ -14,226 +14,297 @@
     ViewData["Title"] = "Weather Data";
 }
 
-<h2>Configure Weather</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .table-responsive {
+            max-height: 400px; /* Adjust height as needed */
+            overflow-y: auto;
+        }
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger">
-        @TempData["ErrorMessage"]
-    </div>
-}
+            .table-responsive thead th {
+                position: sticky;
+                top: 0;
+                background-color: #fff; /* Ensure the header has a background color */
+                z-index: 1; /* Ensure the header is above table body */
+            }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Configure Weather</h2>
+                    </div>
+                    <div class="card-body">
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger">
+                                @TempData["ErrorMessage"]
+                            </div>
+                        }
 
-<form asp-action="SetWeatherConfig" method="post" id="weatherForm" novalidate>
-    <div class="form-group">
-        <label for="location">Location (City Name):</label>
-        <input type="text" id="location" name="location" asp-for="Location" class="form-control" required />
-        <span id="locationError" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label for="updateInterval">Update Interval (minutes):</label>
-        <input type="number" id="updateInterval" name="updateInterval" asp-for="UpdateInterval" class="form-control" required />
-        <span id="updateIntervalError" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label for="numberOfDays">Number of Days for Recorded Historical Data:</label>
-        <input type="number" id="numberOfDays_recorded" name="History_Days" asp-for="History_Days" class="form-control" required />
-        <span id="numberOfDaysRecordedError" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label for="numberOfDays">Number of Days for Forecast Data:</label>
-        <input type="number" id="numberOfDays" name="numberOfDays" asp-for="NumberOfDays" class="form-control" required />
-        <span id="numberOfDaysError" class="text-danger"></span>
-    </div>
-    <br />
-    <button type="submit" class="btn btn-primary">Set Weather Configuration</button>
-</form>
+                        <form asp-action="SetWeatherConfig" method="post" id="weatherForm" novalidate>
+                            <div class="form-group">
+                                <label for="location">Location (City Name):</label>
+                                <input type="text" id="location" name="location" asp-for="Location" class="form-control" required />
+                                <span id="locationError" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="updateInterval">Update Interval (minutes):</label>
+                                <input type="number" id="updateInterval" name="updateInterval" asp-for="UpdateInterval" class="form-control" required />
+                                <span id="updateIntervalError" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="numberOfDays">Number of Days for Recorded Historical Data:</label>
+                                <input type="number" id="numberOfDays_recorded" name="History_Days" asp-for="History_Days" class="form-control" required />
+                                <span id="numberOfDaysRecordedError" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="numberOfDays">Number of Days for Forecast Data:</label>
+                                <input type="number" id="numberOfDays" name="numberOfDays" asp-for="NumberOfDays" class="form-control" required />
+                                <span id="numberOfDaysError" class="text-danger"></span>
+                            </div>
+                            <br />
+                            <button type="submit" class="btn btn-primary btn-block">Set Weather Configuration</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-@if (Model != null)
-{
-    <h2>Current Weather for @ToTitleCase(Model.Location)</h2>
-    <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
-    <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
-    @if (Model.Recorded_History != null && Model.History_Days!=0)
-    {
-        <h2>Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days Days</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Temperature (°C)</th>
-                    <th>Description</th>
-                    <th>Wind Speed (m/s)</th>
-                </tr>
-            </thead>
-            <tbody id="recordedDataBody">
-                @foreach (var data in Model.Recorded_History.Records)
-                {
-                    <tr>
-                        <td>@data.Date.ToString("yyyy-MM-dd")</td>
-                        <td>@data.Timestamp.ToString("HH:mm:ss")</td>
-                        <td>@data.Temperature</td>
-                        <td>@data.Description</td>
-                        <td>@data.WindSpeed</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-    @if (Model.ForecastedData != null && Model.NumberOfDays!= 0)
-    {
-        <h2>Weather Forecast Weather Data at @ToTitleCase(Model.Location) for @Model.NumberOfDays Days</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temperature (°C)</th>
-                    <th>Description</th>
-                    <th>Wind Speed (m/s)</th>
-                </tr>
-            </thead>
-            <tbody id="forecastedDataBody">
-                @foreach (var data in Model.ForecastedData.Records)
-                {
-                    <tr>
-                        <td>@data.Date.ToString("yyyy-MM-dd")</td>
-                        <td>@data.Temperature</td>
-                        <td>@data.Description</td>
-                        <td>@data.WindSpeed</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-}
+        @if (Model != null)
+        {
+            <div class="row mt-4">
+                <div class="col-md-8 offset-md-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Current Weather for @ToTitleCase(Model.Location)</h2>
+                        </div>
+                        <div class="card-body">
+                            <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
+                            <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-@section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"></script>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            function clearErrorMessage(inputId, errorId) {
-                $(inputId).on('input', function () {
-                    $(errorId).text('');
-                });
+            @if (Model.Recorded_History != null && Model.History_Days != 0)
+            {
+                <div class="row mt-4">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days Days</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Time</th>
+                                                <th>Temperature (°C)</th>
+                                                <th>Description</th>
+                                                <th>Wind Speed (m/s)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recordedDataBody">
+                                            @foreach (var data in Model.Recorded_History.Records)
+                                            {
+                                                <tr>
+                                                    <td>@data.Date.ToString("yyyy-MM-dd")</td>
+                                                    <td>@data.Timestamp.ToString("HH:mm:ss")</td>
+                                                    <td>@data.Temperature</td>
+                                                    <td>@data.Description</td>
+                                                    <td>@data.WindSpeed</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             }
 
-            clearErrorMessage('#location', '#locationError');
-            clearErrorMessage('#updateInterval', '#updateIntervalError');
-            clearErrorMessage('#numberOfDays_recorded', '#numberOfDaysRecordedError');
-            clearErrorMessage('#numberOfDays', '#numberOfDaysError');
+            @if (Model.ForecastedData != null && Model.NumberOfDays != 0)
+            {
+                <div class="row mt-4">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Weather Forecast Data at @ToTitleCase(Model.Location) for @Model.NumberOfDays Days</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Temperature (°C)</th>
+                                                <th>Description</th>
+                                                <th>Wind Speed (m/s)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="forecastedDataBody">
+                                            @foreach (var data in Model.ForecastedData.Records)
+                                            {
+                                                <tr>
+                                                    <td>@data.Date.ToString("yyyy-MM-dd")</td>
+                                                    <td>@data.Temperature</td>
+                                                    <td>@data.Description</td>
+                                                    <td>@data.WindSpeed</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 
-            $('#weatherForm').on('submit', function (event) {
-                let isValid = true;
-
-                const location = $('#location').val().trim();
-                const updateInterval = $('#updateInterval').val().trim();
-                const numberOfDaysRecorded = $('#numberOfDays_recorded').val().trim();
-                const numberOfDays = $('#numberOfDays').val().trim();
-
-                // Validate Location
-                if (location === '') {
-                    $('#locationError').text('Location cannot be empty.');
-                    isValid = false;
-                } else {
-                    $('#locationError').text('');
+    @section Scripts {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                function clearErrorMessage(inputId, errorId) {
+                    $(inputId).on('input', function () {
+                        $(errorId).text('');
+                    });
                 }
 
-                // Validate Update Interval
-                if (updateInterval === '') {
-                    $('#updateIntervalError').text('Update interval cannot be empty.');
-                    isValid = false;
-                } else if (!Number.isInteger(Number(updateInterval)) || updateInterval <= 0) {
-                    $('#updateIntervalError').text('Update interval must be a positive integer greater than 0.');
-                    isValid = false;
-                } else {
-                    $('#updateIntervalError').text('');
-                }
+                clearErrorMessage('#location', '#locationError');
+                clearErrorMessage('#updateInterval', '#updateIntervalError');
+                clearErrorMessage('#numberOfDays_recorded', '#numberOfDaysRecordedError');
+                clearErrorMessage('#numberOfDays', '#numberOfDaysError');
 
-                // Validate Number of Days Recorded
-                if (!Number.isInteger(Number(numberOfDaysRecorded)) || numberOfDaysRecorded < 0) {
-                    $('#numberOfDaysRecordedError').text('Number of Days for Recorded Historical Data must be a valid number and cannot be negative.');
-                    isValid = false;
-                } else {
-                    $('#numberOfDaysRecordedError').text('');
-                }
+                $('#weatherForm').on('submit', function (event) {
+                    let isValid = true;
 
-                // Validate Number of Days for Forecast Data
-                if (!Number.isInteger(Number(numberOfDays)) || numberOfDays < 0) {
-                    $('#numberOfDaysError').text('Number of Days for Forecast Data must be a valid number and cannot be negative.');
-                    isValid = false;
-                } else {
-                    $('#numberOfDaysError').text('');
-                }
+                    const location = $('#location').val().trim();
+                    const updateInterval = $('#updateInterval').val().trim();
+                    const numberOfDaysRecorded = $('#numberOfDays_recorded').val().trim();
+                    const numberOfDays = $('#numberOfDays').val().trim();
 
-                if (!isValid) {
-                    event.preventDefault(); // Prevent form submission if validation fails
-                }
+                    // Validate Location
+                    if (location === '') {
+                        $('#locationError').text('Location cannot be empty.');
+                        isValid = false;
+                    } else {
+                        $('#locationError').text('');
+                    }
+
+                    // Validate Update Interval
+                    if (updateInterval === '') {
+                        $('#updateIntervalError').text('Update interval cannot be empty.');
+                        isValid = false;
+                    } else if (!Number.isInteger(Number(updateInterval)) || updateInterval <= 0) {
+                        $('#updateIntervalError').text('Update interval must be a positive integer greater than 0.');
+                        isValid = false;
+                    } else {
+                        $('#updateIntervalError').text('');
+                    }
+
+                    // Validate Number of Days Recorded
+                    if (!Number.isInteger(Number(numberOfDaysRecorded)) || numberOfDaysRecorded < 0) {
+                        $('#numberOfDaysRecordedError').text('Number of Days for Recorded Historical Data must be a valid number and cannot be negative.');
+                        isValid = false;
+                    } else {
+                        $('#numberOfDaysRecordedError').text('');
+                    }
+
+                    // Validate Number of Days for Forecast Data
+                    if (!Number.isInteger(Number(numberOfDays)) || numberOfDays < 0) {
+                        $('#numberOfDaysError').text('Number of Days for Forecast Data must be a valid number and cannot be negative.');
+                        isValid = false;
+                    } else {
+                        $('#numberOfDaysError').text('');
+                    }
+
+                    if (!isValid) {
+                        event.preventDefault(); // Prevent form submission if validation fails
+                    }
+                });
             });
-        });
 
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/weatherHub")
-            .build();
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/weatherHub")
+                .build();
 
-        connection.on("ReceiveWeatherUpdate", function (weatherModel) {
-            document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
-            document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
+            connection.on("ReceiveWeatherUpdate", function (weatherModel) {
+                document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
+                document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
 
-            const historicalDataBody = document.getElementById("forecastedDataBody");
-            historicalDataBody.innerHTML = '';
+                const historicalDataBody = document.getElementById("forecastedDataBody");
+                historicalDataBody.innerHTML = '';
 
-            weatherModel.forecastedData.records.forEach(data => {
-                const row = document.createElement("tr");
+                weatherModel.forecastedData.records.forEach(data => {
+                    const row = document.createElement("tr");
 
-                const dateCell = document.createElement("td");
-                dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
-                row.appendChild(dateCell);
+                    const dateCell = document.createElement("td");
+                    dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
+                    row.appendChild(dateCell);
 
-                const tempCell = document.createElement("td");
-                tempCell.innerText = data.temperature;
-                row.appendChild(tempCell);
+                    const tempCell = document.createElement("td");
+                    tempCell.innerText = data.temperature;
+                    row.appendChild(tempCell);
 
-                const descCell = document.createElement("td");
-                descCell.innerText = data.description;
-                row.appendChild(descCell);
+                    const descCell = document.createElement("td");
+                    descCell.innerText = data.description;
+                    row.appendChild(descCell);
 
-                const windCell = document.createElement("td");
-                windCell.innerText = data.windSpeed;
-                row.appendChild(windCell);
+                    const windCell = document.createElement("td");
+                    windCell.innerText = data.windSpeed;
+                    row.appendChild(windCell);
 
-                historicalDataBody.appendChild(row);
+                    historicalDataBody.appendChild(row);
+                });
+
+                const recordedDataBody = document.getElementById("recordedDataBody");
+                recordedDataBody.innerHTML = '';
+
+                weatherModel.recorded_History.records.forEach(data => {
+                    const row = document.createElement("tr");
+
+                    const dateCell = document.createElement("td");
+                    dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
+                    row.appendChild(dateCell);
+
+                    const timeCell = document.createElement("td");
+                    timeCell.innerText = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    row.appendChild(timeCell);
+
+                    const tempCell = document.createElement("td");
+                    tempCell.innerText = data.temperature;
+                    row.appendChild(tempCell);
+
+                    const descCell = document.createElement("td");
+                    descCell.innerText = data.description;
+                    row.appendChild(descCell);
+
+                    const windCell = document.createElement("td");
+                    windCell.innerText = data.windSpeed;
+                    row.appendChild(windCell);
+
+                    recordedDataBody.appendChild(row);
+                });
             });
 
-            const recordedDataBody = document.getElementById("recordedDataBody");
-            recordedDataBody.innerHTML = '';
-
-            weatherModel.recorded_History.records.forEach(data => {
-                const row = document.createElement("tr");
-
-                const dateCell = document.createElement("td");
-                dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
-                row.appendChild(dateCell);
-
-                const timeCell = document.createElement("td");
-                timeCell.innerText = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                row.appendChild(timeCell);
-
-                const tempCell = document.createElement("td");
-                tempCell.innerText = data.temperature;
-                row.appendChild(tempCell);
-
-                const descCell = document.createElement("td");
-                descCell.innerText = data.description;
-                row.appendChild(descCell);
-
-                const windCell = document.createElement("td");
-                windCell.innerText = data.windSpeed;
-                row.appendChild(windCell);
-
-                recordedDataBody.appendChild(row);
-            });
-        });
-
-        connection.start().catch(err => console.error(err.toString()));
-    </script>
-}
+            connection.start().catch(err => console.error(err.toString()));
+        </script>
+    }
+</body>
+</html>

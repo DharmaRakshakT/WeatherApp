@@ -53,12 +53,12 @@ namespace WeatherApp.Controllers
                 }
 
                 // Proceed with the rest of the method if validation passes
-                 _weatherModel = await _weatherService.GetWeatherDataAsync(weatherModel.Location, weatherModel.NumberOfDays, weatherModel.History_Days);
+                _weatherModel = await _weatherService.GetWeatherDataAsync(weatherModel.Location, weatherModel.NumberOfDays, weatherModel.History_Days);
                 _weatherModel.UpdateInterval = weatherModel.UpdateInterval;
                 _weatherModel.NumberOfDays = weatherModel.NumberOfDays;
                 _weatherModel.History_Days = weatherModel.History_Days;
                 _weatherModel.Location = weatherModel.Location;
-                //_weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location, numberOfDays_recorded);
+                _weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(weatherModel.Location, weatherModel.History_Days);
 
                 _weatherUpdateService.ConfigureWeatherModel(_weatherModel);
 
