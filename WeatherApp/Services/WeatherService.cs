@@ -10,7 +10,7 @@ namespace WeatherApp.Services
     public class WeatherService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey = "88342dc176b514bb3d1c1667ee63da26";  //
+        private readonly string _apiKey = "6f1d314a2c0c4bd703bebb7d5a563785";  //88342dc176b514bb3d1c1667ee63da26
         private readonly ILogger<WeatherService> _logger;
         private readonly Weather_History _weather_History;
 
@@ -37,6 +37,9 @@ namespace WeatherApp.Services
             weatherModel.CurrentTemperature = currentWeather.Item1;
             weatherModel.CurrentDescription = currentWeather.Item2;
 
+            //Weather_History weather_History = new Weather_History();
+            //weather_History.Records=await GetHistoricalWeatherDataAsync(lat, lon,numberOfDays);
+
             // Get weather data
             var weatherData = await GetWeatherDataAsync(lat, lon);
             DateTime dateTime = DateTime.Now;
@@ -44,12 +47,14 @@ namespace WeatherApp.Services
 
             _weather_History.Records.Add(record);
 
+            weatherModel.CurrentDate = DateTime.Now;
             weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location,numberOfDays_Recorded);
             // Filter weather data by date
             weatherModel.ForecastedData.Records = FilterWeatherData(weatherData, numberOfDays);
 
-            //var historicalData = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays);
-            //weatherModel.HistoricalData = historicalData;
+            //
+            var historicalData = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays_Recorded);
+            weatherModel.HistoricalData.Records = historicalData;
 
             return weatherModel;
         }
@@ -119,8 +124,57 @@ namespace WeatherApp.Services
             string weatherApiUrl = $"https://history.openweathermap.org/data/2.5/history/city?lat={lat}&lon={lon}&appid={_apiKey}&units=metric";
             string response = await _httpClient.GetStringAsync(weatherApiUrl);
             JObject weatherData = JObject.Parse(response);
-            var weatherDataList = (JArray)weatherData["list"];
-            return FilterWeatherData(weatherDataList, numberOfDays);
+            return FilterWeatherData_History((JArray)weatherData["list"], numberOfDays);
+
+
         }
+        private List<WeatherData> FilterWeatherData_History(JArray weatherData, int numberOfDays)
+        {
+            var filteredData = new List<WeatherData>();
+
+            if (weatherData == null || weatherData.Count == 0)
+            {
+                _logger.LogWarning("Weather data is null or empty.");
+                return filteredData;
+            }
+
+            // Group data by date
+            var groupedData = weatherData
+                .GroupBy(entry => DateTimeOffset.FromUnixTimeSeconds(entry["dt"].Value<long>()).Date)
+                .OrderByDescending(group => group.Key) // Order by date descending to get the latest days first
+                .Take(numberOfDays); // Take only the required number of days
+
+            foreach (var group in groupedData)
+            {
+                var firstEntry = group.FirstOrDefault();
+                if (firstEntry == null)
+                {
+                    _logger.LogWarning("First entry in group is null.");
+                    continue;
+                }
+
+                var date = firstEntry["dt"].Value<long>();
+                var temperature = firstEntry["main"]?["temp"]?.Value<double>();
+                var description = firstEntry["weather"]?[0]?["description"]?.Value<string>();
+                var windSpeed = firstEntry["wind"]?["speed"]?.Value<double>();
+
+                if (temperature == null || description == null || windSpeed == null)
+                {
+                    _logger.LogWarning("One or more weather data fields are null.");
+                    continue;
+                }
+
+                filteredData.Add(new WeatherData
+                {
+                    Date = DateTimeOffset.FromUnixTimeSeconds(date).DateTime,
+                    Temperature = temperature.Value,
+                    Description = description,
+                    WindSpeed = windSpeed.Value
+                });
+            }
+
+            return filteredData;
+        }
+
     }
 }

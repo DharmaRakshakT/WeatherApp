@@ -44,6 +44,7 @@ namespace WeatherApp.Services
                         _weatherModel.CurrentDescription = updatedWeatherModel.CurrentDescription;
                         _weatherModel.ForecastedData = updatedWeatherModel.ForecastedData;
                         _weatherModel.Recorded_History = updatedWeatherModel.Recorded_History;
+                        _weatherModel.CurrentDate = updatedWeatherModel.CurrentDate;
                         //_weatherModel.Forcast = updatedWeatherModel.Forcast;
 
                         await _hubContext.Clients.All.SendAsync("ReceiveWeatherUpdate", _weatherModel);

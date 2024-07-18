@@ -25,6 +25,7 @@
         .table-responsive {
             max-height: 400px; /* Adjust height as needed */
             overflow-y: auto;
+            margin-bottom: 20px; /* Add margin at the bottom of the table */
         }
 
             .table-responsive thead th {
@@ -39,7 +40,7 @@
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-8 offset-md-2">
-                <div class="card">
+                <div class="card mb-4">
                     <div class="card-header">
                         <h2>Configure Weather</h2>
                     </div>
@@ -84,13 +85,16 @@
         {
             <div class="row mt-4">
                 <div class="col-md-8 offset-md-2">
-                    <div class="card">
+                    <div class="card mb-4">
                         <div class="card-header">
                             <h2>Current Weather for @ToTitleCase(Model.Location)</h2>
                         </div>
                         <div class="card-body">
                             <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
                             <p>Description: <span id="currentDescription">@Model.CurrentDescription</span></p>
+                            <p>Date: <span id="currentDate">@Model.CurrentDate.ToString("yyyy-MM-dd")</span></p>
+                            <p>Time: <span id="currentTime">@Model.CurrentDate.ToString("HH:mm:ss")</span></p>
+
                         </div>
                     </div>
                 </div>
@@ -100,9 +104,12 @@
             {
                 <div class="row mt-4">
                     <div class="col-md-8 offset-md-2">
-                        <div class="card">
+                        <div class="card mb-4">
                             <div class="card-header">
-                                <h2>Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days Days</h2>
+                                <h2>
+                                    Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days days
+                                    
+                                </h2>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -135,12 +142,51 @@
                     </div>
                 </div>
             }
+            @if (Model.HistoricalData != null && Model.History_Days != 0)
+            {
+                <div class="row mt-4">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h2>
+                                    Recorded Weather Data at @ToTitleCase(Model.Location) for past @Model.History_Days days
 
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Temperature (°C)</th>
+                                                <th>Description</th>
+                                                <th>Wind Speed (m/s)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="historyDataBody">
+                                            @foreach (var data in Model.HistoricalData.Records)
+                                            {
+                                                <tr>
+                                                    <td>@data.Date.ToString("yyyy-MM-dd")</td>
+                                                    <td>@data.Temperature</td>
+                                                    <td>@data.Description</td>
+                                                    <td>@data.WindSpeed</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
             @if (Model.ForecastedData != null && Model.NumberOfDays != 0)
             {
                 <div class="row mt-4">
                     <div class="col-md-8 offset-md-2">
-                        <div class="card">
+                        <div class="card mb-4">
                             <div class="card-header">
                                 <h2>Weather Forecast Data at @ToTitleCase(Model.Location) for @Model.NumberOfDays Days</h2>
                             </div>
@@ -247,6 +293,9 @@
             connection.on("ReceiveWeatherUpdate", function (weatherModel) {
                 document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
                 document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
+                document.getElementById("currentDate").innerText = new Date(weatherModel.currentDate).toISOString().split('T')[0];
+                document.getElementById("currentTime").innerText = new Date(weatherModel.currentDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
 
                 const historicalDataBody = document.getElementById("forecastedDataBody");
                 historicalDataBody.innerHTML = '';

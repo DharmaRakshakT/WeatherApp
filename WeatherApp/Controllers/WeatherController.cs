@@ -60,6 +60,7 @@ namespace WeatherApp.Controllers
                 _weatherModel.Location = weatherModel.Location;
                 _weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(weatherModel.Location, weatherModel.History_Days);
 
+                _weatherModel.CurrentDate = DateTime.Now;
                 _weatherUpdateService.ConfigureWeatherModel(_weatherModel);
 
                 await _hubContext.Clients.All.SendAsync("ReceiveWeatherUpdate", _weatherModel);
