@@ -54,12 +54,10 @@ namespace WeatherApp.Controllers
                 {
                     throw new ArgumentException("Number of Days for Historical Data must be a valid number and cannot be negative.");
                 }
-                List<WeatherData> history = _weather_History.Records;
                 // Proceed with the rest of the method if validation passes
                 _weatherModel = await _weatherService.GetWeatherDataAsync(weatherModel.Location, weatherModel.Historical_Data_Days, weatherModel.Recorded_History_Days,weatherModel.UpdateInterval);
                 _weatherModel.UpdateInterval = weatherModel.UpdateInterval;
                 _weatherModel.Historical_Data_Days = weatherModel.Historical_Data_Days;
-                _weatherModel.Recorded_History.Records = history;
                 _weatherModel.Location = weatherModel.Location;
                 _weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(weatherModel.Location, weatherModel.Recorded_History_Days);
 
