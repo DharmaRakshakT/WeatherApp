@@ -2,6 +2,7 @@
 {
     public class Weather_History
     {
+        
         public List<WeatherData> Records { get; set; } = new List<WeatherData>();
         public List<WeatherData> GetRecordsByCity(string city, int numberOfDays = 0)
         {

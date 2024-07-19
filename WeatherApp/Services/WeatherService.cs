@@ -40,6 +40,7 @@ namespace WeatherApp.Services
                 var (lat, lon) = await GetCoordinatesAsync(location);
 
                 // Get current weather data
+
                 var currentWeather = await GetCurrentWeatherAsync(lat, lon);
                 weatherModel.CurrentTemperature = currentWeather.Item1;
                 currentWeather.Item2 = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(currentWeather.Item2.ToLower());
