@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json.Linq;
 using WeatherApp.Models;
 
@@ -13,22 +14,27 @@ namespace WeatherApp.Services
     public class WeatherService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey = "6f1d314a2c0c4bd703bebb7d5a563785";  //88342dc176b514bb3d1c1667ee63da26
+        private readonly string _apiKey; 
         private readonly ILogger<WeatherService> _logger;
         private readonly Weather_History _weather_History;
+        private readonly IMemoryCache _cache;
+        private readonly Dictionary<string, (double lat, double lon)> _coordinateCache = new();
+
 
         private double Latitude { get; set; }
         private double Longitude { get; set; }
         private string Location { get; set; } = "Tampa";
 
-        public WeatherService(HttpClient httpClient,Weather_History weather_History, ILogger<WeatherService> logger)
+        public WeatherService(HttpClient httpClient,Weather_History weather_History, IMemoryCache cache, ILogger<WeatherService> logger, IConfiguration configuration)
         {
             _httpClient = httpClient;
             _logger = logger;
             _weather_History = weather_History;
+            _cache = cache;
+            _apiKey= configuration["WeatherApiKey"];
         }
 
-        public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays=0 , int numberOfDays_Recorded=0)
+        public async Task<WeatherModel> GetWeatherDataAsync(string location, int numberOfDays=0 , int numberOfDays_Recorded=0 , int update_interval =0)
         {
             _logger.LogInformation("Fetching weather data for location: {Location}", location);
 
@@ -57,7 +63,7 @@ namespace WeatherApp.Services
                 weatherModel.CurrentDate = DateTime.Now;
                 weatherModel.Recorded_History.Records = _weather_History.GetRecordsByCity(location, numberOfDays_Recorded);
 
-                weatherModel.Historical_data.Records = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays, location);
+                weatherModel.Historical_data.Records = await GetHistoricalWeatherDataAsync(lat, lon, numberOfDays, location , update_interval);
 
                 _logger.LogInformation("Weather data fetched successfully for location: {Location}", location);
 
@@ -73,8 +79,10 @@ namespace WeatherApp.Services
 
         private async Task<(double, double)> GetCoordinatesAsync(string location)
         {
-            //var response = await _httpClient.GetStringAsync($"http://api.openweathermap.org/geo/1.0/direct?q={location}&limit=1&appid={_apiKey}");
-            //var data = JArray.Parse(response);
+            if (_coordinateCache.TryGetValue(location.ToLower(), out var coordinates))
+            {
+                return coordinates;
+            }
 
             string geoApiUrl = $"http://api.openweathermap.org/geo/1.0/direct?q={location}&limit=1&appid={_apiKey}";
             string response = await _httpClient.GetStringAsync(geoApiUrl);
@@ -83,6 +91,7 @@ namespace WeatherApp.Services
             {
                 double lat = data[0]["lat"].Value<double>();
                 double lon = data[0]["lon"].Value<double>();
+                _coordinateCache[location.ToLower()] = (lat, lon);
                 return (lat, lon);
             }
             else
@@ -104,12 +113,20 @@ namespace WeatherApp.Services
 
 
 
-        private async Task<List<WeatherData>> GetHistoricalWeatherDataAsync(double lat, double lon, int numberOfDays,string location)
+        private async Task<List<WeatherData>> GetHistoricalWeatherDataAsync(double lat, double lon, int numberOfDays,string location, int update_interval=0)
         {
-            
+
             DateTime dateTime = DateTime.Now;
-            DateTime startDate = dateTime.AddDays(-numberOfDays); // Replace with your start date
-            DateTime endDate = dateTime.Date; // Replace with your end date
+            DateTime startDate = dateTime.AddDays(-numberOfDays);
+            DateTime endDate = dateTime.Date;
+
+            var cacheKey = $"{location}-{startDate:yyyyMMdd}-{endDate:yyyyMMdd}";
+
+            if (_cache.TryGetValue(cacheKey, out List<WeatherData> cachedData))
+            {
+                _logger.LogInformation("Returning cached historical weather data for {Location} from {StartDate} to {EndDate}", location, startDate, endDate);
+                return cachedData;
+            }
 
             List<Weather_Data> allWeatherData = new List<Weather_Data>();
 
@@ -136,7 +153,8 @@ namespace WeatherApp.Services
                     WindSpeedAvg = Math.Round(g.Average(w => w.Wind.Speed), 2),
                     WeatherDescription = g.First().Weather.First().Description
                 });
-            List<WeatherData> weatherData =  new List<WeatherData>();
+
+            List<WeatherData> weatherData = new List<WeatherData>();
 
             foreach (var summary in dailySummaries)
             {
@@ -151,9 +169,19 @@ namespace WeatherApp.Services
                     weather.City = location;
                     weatherData.Add(weather);
                 }
-               
             }
-            weatherData= weatherData.OrderByDescending(record => record.Date).ToList();
+
+            weatherData = weatherData.OrderByDescending(record => record.Date).ToList();
+            if (update_interval == 0)
+            {
+                _cache.Set(cacheKey, weatherData, TimeSpan.FromHours(1)); // Cache for 1 hour
+            }
+            else
+            {
+                _cache.Set(cacheKey, weatherData, TimeSpan.FromHours((int)Math.Ceiling(update_interval / 60.0))); // Cache for 1 hour
+
+            }
+
             return weatherData;
         }
 

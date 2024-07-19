@@ -19,6 +19,8 @@ builder.Services.AddSingleton<Weather_History>();
 builder.Services.AddHttpClient<WeatherService>();
 builder.Services.AddSingleton<WeatherUpdateService>();
 builder.Services.AddHostedService(provider => provider.GetService<WeatherUpdateService>());
+builder.Services.AddMemoryCache();
+
 
 var app = builder.Build();
 

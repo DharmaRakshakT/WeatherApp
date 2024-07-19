@@ -40,7 +40,7 @@ namespace WeatherApp.Services
                     try
                     {
                         _logger.LogInformation("Fetching updated weather data.");
-                        var updatedWeatherModel = await _weatherService.GetWeatherDataAsync(_weatherModel.Location, _weatherModel.Historical_Data_Days,_weatherModel.Recorded_History_Days);
+                        var updatedWeatherModel = await _weatherService.GetWeatherDataAsync(_weatherModel.Location, _weatherModel.Historical_Data_Days,_weatherModel.Recorded_History_Days,_weatherModel.UpdateInterval);
                         
                         _weatherModel.CurrentTemperature = updatedWeatherModel.CurrentTemperature;
                         _weatherModel.CurrentDescription = updatedWeatherModel.CurrentDescription;

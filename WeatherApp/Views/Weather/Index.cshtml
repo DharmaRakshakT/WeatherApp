@@ -34,12 +34,36 @@
                 background-color: #fff; /* Ensure the header has a background color */
                 z-index: 1; /* Ensure the header is above table body */
             }
+
+        .card {
+            width: 100%; /* Make sure the card uses the full width of its container */
+        }
+
+        .table {
+            width: 100%; /* Ensure the table uses the full width of the card */
+            table-layout: fixed; /* Optional: ensure consistent column widths */
+        }
+
+            .table th, .table td {
+                white-space: nowrap; /* Prevent text wrapping for a cleaner look */
+                text-align: center; /* Center-align text in table cells */
+            }
+
+            .table th {
+                text-transform: capitalize; /* Capitalize headers for better readability */
+            }
+
+        .required::after {
+            content: "*";
+            color: red;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-4">
         <div class="row">
-            <div class="col-md-8 offset-md-2">
+            <div class="col-md-10 offset-md-1">
                 <div class="card mb-4">
                     <div class="card-header">
                         <h2>Configure Weather</h2>
@@ -54,23 +78,23 @@
 
                         <form asp-action="SetWeatherConfig" method="post" id="weatherForm" novalidate>
                             <div class="form-group">
-                                <label for="location">Location (City Name):</label>
+                                <label for="location" class="required">Location (City Name):</label>
                                 <input type="text" id="location" name="location" asp-for="Location" class="form-control" required />
                                 <span id="locationError" class="text-danger"></span>
                             </div>
                             <div class="form-group">
-                                <label for="updateInterval">Update Interval (minutes):</label>
+                                <label for="updateInterval" class="required">Update Interval (minutes):</label>
                                 <input type="number" id="updateInterval" name="updateInterval" asp-for="UpdateInterval" class="form-control" required />
                                 <span id="updateIntervalError" class="text-danger"></span>
                             </div>
                             <div class="form-group">
                                 <label for="numberOfDays">Number of Days for Recorded Historical Data:</label>
-                                <input type="number" id="numberOfDays_recorded" name="Recorded_History_Days" asp-for="Recorded_History_Days" class="form-control" required />
+                                <input type="number" id="numberOfDays_recorded" name="Recorded_History_Days" asp-for="Recorded_History_Days" class="form-control" />
                                 <span id="numberOfDaysRecordedError" class="text-danger"></span>
                             </div>
                             <div class="form-group">
                                 <label for="numberOfDays">Number of Days for Historical Data:</label>
-                                <input type="number" id="numberOfDays" name="Historical_Data_Days" asp-for="Historical_Data_Days" class="form-control" required />
+                                <input type="number" id="numberOfDays" name="Historical_Data_Days" asp-for="Historical_Data_Days" class="form-control" />
                                 <span id="numberOfDaysError" class="text-danger"></span>
                             </div>
                             <br />
@@ -81,20 +105,28 @@
             </div>
         </div>
 
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" style="display: none;">
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        </div>
+
         @if (Model != null)
         {
             <div class="row mt-4">
-                <div class="col-md-8 offset-md-2">
+                <div class="col-md-10 offset-md-1">
                     <div class="card mb-4">
-                        <div class="card-header">
-                            <h2>Current Weather for @toTitleCase(Model.Location)</h2>
+                        <div class="card-header center">
+                            <h2>Current Weather at City: @toTitleCase(Model.Location)</h2>
                         </div>
                         <div class="card-body">
                             <p>Temperature: <span id="currentTemperature">@Model.CurrentTemperature</span> °C</p>
                             <p>Description: <span id="currentDescription">@toTitleCase(Model.CurrentDescription)</span></p>
                             <p>Date: <span id="currentDate">@Model.CurrentDate.ToString("yyyy-MM-dd")</span></p>
                             <p>Time: <span id="currentTime">@Model.CurrentDate.ToString("HH:mm")</span></p>
-
                         </div>
                     </div>
                 </div>
@@ -103,12 +135,11 @@
             @if (Model.Recorded_History != null && Model.Recorded_History_Days != 0)
             {
                 <div class="row mt-4">
-                    <div class="col-md-8 offset-md-2">
+                    <div class="col-md-10 offset-md-1">
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h2>
-                                    Recorded Weather Data at @toTitleCase(Model.Location) for past @Model.Recorded_History_Days days
-                                    
+                                    Recorded Weather Data at city: @toTitleCase(Model.Location) for past @Model.Recorded_History_Days days
                                 </h2>
                             </div>
                             <div class="card-body">
@@ -145,12 +176,11 @@
             @if (Model.Historical_data != null && Model.Historical_Data_Days != 0)
             {
                 <div class="row mt-4">
-                    <div class="col-md-8 offset-md-2">
+                    <div class="col-md-10 offset-md-1">
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h2>
-                                    Historical Weather Data at @toTitleCase(Model.Location) for past @Model.Historical_Data_Days days
-
+                                    Historical Weather Data at City: @toTitleCase(Model.Location) for past @Model.Historical_Data_Days days
                                 </h2>
                             </div>
                             <div class="card-body">
@@ -164,7 +194,8 @@
                                                 <th>Wind Speed (m/s)</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="recordedDataBody">
+                                        <tbody id="historicalDataBody">
+                                            <!-- Updated ID for distinction -->
                                             @foreach (var data in Model.Historical_data.Records)
                                             {
                                                 <tr>
@@ -245,55 +276,81 @@
 
                     if (!isValid) {
                         event.preventDefault(); // Prevent form submission if validation fails
+                    } else {
+                        $('#loadingIndicator').show(); // Show loading indicator
                     }
                 });
-            });
 
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl("/weatherHub")
-                .build();
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/weatherHub")
+                    .build();
 
-            connection.on("ReceiveWeatherUpdate", function (weatherModel) {
-                document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
-                document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
+                connection.on("ReceiveWeatherUpdate", function (weatherModel) {
+                    document.getElementById("currentTemperature").innerText = weatherModel.currentTemperature;
+                    document.getElementById("currentDescription").innerText = weatherModel.currentDescription;
 
-                document.getElementById("currentDate").innerText = new Date(weatherModel.currentDate).toISOString().split('T')[0];
-                document.getElementById("currentTime").innerText = new Date(weatherModel.currentDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    document.getElementById("currentDate").innerText = new Date(weatherModel.currentDate).toISOString().split('T')[0];
+                    document.getElementById("currentTime").innerText = new Date(weatherModel.currentDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
+                    const recordedDataBody = document.getElementById("recordedDataBody");
+                    recordedDataBody.innerHTML = '';
 
-                
+                    weatherModel.recorded_History.records.forEach(data => {
+                        const row = document.createElement("tr");
 
-                const recordedDataBody = document.getElementById("recordedDataBody");
-                recordedDataBody.innerHTML = '';
+                        const dateCell = document.createElement("td");
+                        dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
+                        row.appendChild(dateCell);
 
-                weatherModel.recorded_History.records.forEach(data => {
-                    const row = document.createElement("tr");
+                        const timeCell = document.createElement("td");
+                        timeCell.innerText = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                        row.appendChild(timeCell);
 
-                    const dateCell = document.createElement("td");
-                    dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
-                    row.appendChild(dateCell);
+                        const tempCell = document.createElement("td");
+                        tempCell.innerText = data.temperature;
+                        row.appendChild(tempCell);
 
-                    const timeCell = document.createElement("td");
-                    timeCell.innerText = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                    row.appendChild(timeCell);
+                        const descCell = document.createElement("td");
+                        descCell.innerText = data.description;
+                        row.appendChild(descCell);
 
-                    const tempCell = document.createElement("td");
-                    tempCell.innerText = data.temperature;
-                    row.appendChild(tempCell);
+                        const windCell = document.createElement("td");
+                        windCell.innerText = data.windSpeed;
+                        row.appendChild(windCell);
 
-                    const descCell = document.createElement("td");
-                    descCell.innerText = data.description;
-                    row.appendChild(descCell);
+                        recordedDataBody.appendChild(row);
+                    });
 
-                    const windCell = document.createElement("td");
-                    windCell.innerText = data.windSpeed;
-                    row.appendChild(windCell);
+                    const historicalDataBody = document.getElementById("historicalDataBody");
+                    historicalDataBody.innerHTML = '';
 
-                    recordedDataBody.appendChild(row);
+                    weatherModel.historical_data.records.forEach(data => {
+                        const row = document.createElement("tr");
+
+                        const dateCell = document.createElement("td");
+                        dateCell.innerText = new Date(data.date).toISOString().split('T')[0];
+                        row.appendChild(dateCell);
+
+                        const tempCell = document.createElement("td");
+                        tempCell.innerText = data.temperature;
+                        row.appendChild(tempCell);
+
+                        const descCell = document.createElement("td");
+                        descCell.innerText = data.description;
+                        row.appendChild(descCell);
+
+                        const windCell = document.createElement("td");
+                        windCell.innerText = data.windSpeed;
+                        row.appendChild(windCell);
+
+                        historicalDataBody.appendChild(row);
+                    });
+
+                    $('#loadingIndicator').hide(); // Hide loading indicator
                 });
-            });
 
-            connection.start().catch(err => console.error(err.toString()));
+                connection.start().catch(err => console.error(err.toString()));
+            });
         </script>
     }
 </body>
